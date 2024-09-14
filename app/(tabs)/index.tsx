@@ -5,6 +5,7 @@ import {
   TextInput,
   Pressable,
   FlatList,
+  View,
 } from "react-native";
 
 interface Message {
@@ -74,26 +75,28 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView className="bg-black w-full h-screen">
+    <SafeAreaView className="bg-black h-screen">
       <FlatList
         data={messages}
         renderItem={renderMessage}
-        keyExtractor={(_, index) => index.toString()}
+        keyExtractor={(index) => index.toString()}
       />
-
-      <SafeAreaView className="flex flex-row justify-between items-center bg-[#0d0e1e] p-3 border-t border-slate-50">
-        <TextInput
-          className="max-w-full bg-[#171927] border border-white rounded-lg text-white"
-          placeholder="Type a message..."
-          value={text}
-          onChangeText={setText}
-        />
-        <Pressable
-          className="flex justify-center items-center bg-[#5720ff] h-7 w-12 rounded-xl "
-          onPress={handleSend}
-        >
-          <Text className="text-white">Send</Text>
-        </Pressable>
+      <SafeAreaView className="bg-[#0d0e1e] p-3 border-t border-slate-50">
+        <View className="flex flex-row items-center">
+          <TextInput
+            className="flex-1 bg-[#171927] border border-white rounded-lg text-white px-2 py-2 mr-2"
+            placeholder="Type a message..."
+            placeholderTextColor="#ffffff"
+            value={text}
+            onChangeText={setText}
+          />
+          <Pressable
+            className="justify-center items-center p-2 px-4 rounded-xl bg-[#5720ff]"
+            onPress={handleSend}
+          >
+            <Text className="text-white">Send</Text>
+          </Pressable>
+        </View>
       </SafeAreaView>
     </SafeAreaView>
   );
