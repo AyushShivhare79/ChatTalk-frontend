@@ -1,52 +1,100 @@
-import { useEffect, useState } from "react";
-import { Text, SafeAreaView, TextInput, Pressable } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Text,
+  SafeAreaView,
+  TextInput,
+  Pressable,
+  FlatList,
+} from "react-native";
+
+interface Message {
+  type: "sender" | "receiver";
+  message: string;
+}
 
 export default function HomeScreen() {
-  const [text, setText] = useState<string>();
-  const [socket, setSocket] = useState<null | WebSocket>(null);
-  const [newMessage, setNewMessage] = useState<string>("NOT");
+  const [text, setText] = useState<string>("");
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const handleNewMessage = useCallback((newMessage: Message) => {
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
+  }, []);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://10.0.2.2:8585");
+    const newSocket = new WebSocket("ws://10.0.2.2:8585");
 
-    console.log("Socket: ", socket);
-
-    socket.onopen = () => {
-      console.log("Connection");
-      setSocket(socket);
+    newSocket.onopen = () => {
+      console.log("Connection opened");
+      setSocket(newSocket);
     };
 
-    socket.onmessage = (message) => {
-      console.log("Message received:", message.data);
-      setNewMessage(message.data);
+    newSocket.onmessage = (event) => {
+      handleNewMessage({ type: "receiver", message: event.data });
     };
 
-    socket.onclose = () => {
-      console.log("CLOSED");
+    newSocket.onclose = () => {
+      console.log("Connection closed");
     };
-    socket.onerror = (e: any) => {
-      console.log("Error");
-      console.log(e.message);
+
+    newSocket.onerror = (error) => {
+      console.log("WebSocket error:", error);
     };
-  }, []);
+
+    return () => {
+      newSocket.close();
+    };
+  }, [handleNewMessage]);
+
+  //   socket.onmessage = (message) => {
+  //     // console.log("Message received:", message.data);
+  //     // setReceivedMessage(message.data);
+  //     console.log("INSIDE: ", latestMessage);
+  //     setLatestMessage([...latestMessage, { message: message.data }]);
+  //   };
+
+  const handleSend = () => {
+    if (socket && text.trim()) {
+      socket.send(text);
+      handleNewMessage({ type: "sender", message: text });
+      setText("");
+    }
+  };
+
+  const renderMessage = ({ item }: { item: Message }) => (
+    <Text
+      className={`p-3 rounded-3xl m-2 ${
+        item.type === "receiver"
+          ? "self-start bg-[#1f1e25] text-white"
+          : "self-end	 bg-[#5720ff] text-white"
+      }`}
+    >
+      {item.message}
+    </Text>
+  );
+
   return (
-    <SafeAreaView className="flex justify-center items-center h-screen">
-      <Text>This: {newMessage}</Text>
-      <TextInput
-        className="border border-black rounded-2xl w-full"
-        placeholder=" Type here..."
-        onChangeText={setText}
-        value={text}
+    <SafeAreaView className="bg-black w-full h-screen">
+      <FlatList
+        data={messages}
+        renderItem={renderMessage}
+        keyExtractor={(_, index) => index.toString()}
       />
-      <Pressable
-        className="flex justify-center items-center bg-black rounded-xl w-12 h-8"
-        onPress={() => {
-          socket?.send(text || "");
-          return setText("");
-        }}
-      >
-        <Text className="text-white">Send</Text>
-      </Pressable>
+
+      <SafeAreaView className="flex flex-row justify-between items-center bg-[#0d0e1e] p-3 border-t border-slate-50">
+        <TextInput
+          className="max-w-full bg-[#171927] border border-white rounded-lg text-white"
+          placeholder="Type a message..."
+          value={text}
+          onChangeText={setText}
+        />
+        <Pressable
+          className="flex justify-center items-center bg-[#5720ff] h-7 w-12 rounded-xl "
+          onPress={handleSend}
+        >
+          <Text className="text-white">Send</Text>
+        </Pressable>
+      </SafeAreaView>
     </SafeAreaView>
   );
 }
